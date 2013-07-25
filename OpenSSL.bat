@@ -3,11 +3,11 @@ setlocal
 Rem 
 Rem <b>OpenSSL</b> command file.
 Rem @author Jack D. Pond
-Rem @version 1.0 / Windows Batch Processor
-Rem @see http://wiki.montcopa.org/MediaWiki/index.php?title=Get_a_MontCo_Certificate
+Rem @version 0.2 / Windows Batch Processor
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description execute the OpenSSL using passed parameters
 Rem
-call CertConfig.bat
+call "etc/CertConfig.bat"
 set AllParms=%1
 :StartLoop
 IF "%2" == "" goto OutLoop

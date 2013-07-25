@@ -9,7 +9,7 @@ Rem @description Create a renewal request from a full 509v3 signed key with cert
 rem @description 	and the original signed request (crt)
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 :PickCertName
 if "%1" NEQ "" (

@@ -3,12 +3,12 @@ setLocal EnableDelayedExpansion
 Rem 
 Rem <b>CreateSignedPKCS12(PFXfromKEY-CRT)</b> command file.
 Rem @author Jack D. Pond
-Rem @version 0.1 / Windows Batch Processor
+Rem @version 0.2 / Windows Batch Processor
 Rem @see 
 Rem @description Convert x509 key set (private and public) to a PKS#12 (PFX)
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 if exist %OpenSSLExe% goto :PickCertName
 echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat

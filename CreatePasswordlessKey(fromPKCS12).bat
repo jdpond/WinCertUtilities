@@ -8,7 +8,7 @@ Rem @see
 Rem @description Extract a private, unencrypted PKCS12 key (pfx) from a full PKCS12 (encrypted)
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 :PickCertName
 if "%1" NEQ "" (

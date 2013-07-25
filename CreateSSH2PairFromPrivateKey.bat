@@ -3,14 +3,14 @@ setLocal EnableDelayedExpansion
 Rem 
 Rem <b>CreateSSH2PairFromPrivateKey</b> command file.
 Rem @author Jack D. Pond
-Rem @version 0.1 / Windows Batch Processor
-Rem @see http://wiki.montcopa.org/MediaWiki/index.php?title=Get_a_MontCo_Certificate
+Rem @version 0.2 / Windows Batch Processor
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description Create an SSH2 keyset from an encrypted 509 key (private.key).
 Rem @description   This key type is commonly used in Linux connection utilities such as PuTTY and WinSCP.
 Rem @description   Additionally, it creates the public key x.509v3 key (.pub) and optionally creates the authorized_key ssh2
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 if exist %OpenSSLExe% goto :PickCertName
 echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat
 echo You can download this open source system from:  http://www.openssl.org/related/binaries.html

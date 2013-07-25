@@ -4,11 +4,11 @@ Rem
 Rem <b>ShowPKCS12Details(fromPFX)</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
-Rem @see http://wiki.montcopa.org/MediaWiki/index.php?title=Get_a_MontCo_Certificate
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki/Home
 Rem @description Output PKCS12 (PFX) Information
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 :PickCertName
 if "%1" NEQ "" (

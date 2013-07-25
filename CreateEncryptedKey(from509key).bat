@@ -4,11 +4,11 @@ Rem
 Rem <b>CreateEncryptedKey(fromPasswordless)</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
-Rem @see http://wiki.montcopa.org/MediaWiki/index.php?title=Get_a_MontCo_Certificate
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description Create a private, encrypted (aes256) RSA key (pem) from a 509v3 unencrypted key
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 :PickCertName
 if "%1" NEQ "" (

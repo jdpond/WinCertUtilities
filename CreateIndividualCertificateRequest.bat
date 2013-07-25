@@ -7,7 +7,7 @@ Rem @version 0.1 / Windows Batch Processor
 Rem @see 
 Rem @description Create a private key and a certificate signing request
 Rem
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 if exist %OpenSSLExe% goto :PickCertType
 echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat

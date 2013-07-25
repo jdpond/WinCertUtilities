@@ -3,12 +3,12 @@ setLocal EnableDelayedExpansion
 Rem 
 Rem <b>CreatePasswordlessKey(fromPEM)</b> command file.
 Rem @author Jack D. Pond
-Rem @version 0.1 / Windows Batch Processor
-Rem @see http://wiki.montcopa.org/MediaWiki/index.php?title=Get_a_MontCo_Certificate
+Rem @version 0.2 / Windows Batch Processor
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description Output CSR Information
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 :PickCertName
 if "%1" NEQ "" (

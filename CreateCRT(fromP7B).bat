@@ -8,7 +8,7 @@ Rem @see
 Rem @description Convert a PKCS#7 key to CRT (X.509) format
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
-call CertConfig.bat
+call "etc/CertConfig.bat"
 
 if exist %OpenSSLExe% goto :PickCertName
 echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat

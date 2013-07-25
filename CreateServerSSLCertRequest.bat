@@ -3,11 +3,11 @@ setLocal EnableDelayedExpansion
 Rem 
 Rem <b>CreateNewCertificate</b> command file.
 Rem @author Jack D. Pond
-Rem @version 0.1 / Windows Batch Processor
+Rem @version 0.2 / Windows Batch Processor
 Rem @see 
 Rem @description Create a private key and a certificate signing request
 Rem
-call CertConfig.bat
+call "etc/CertConfig.bat"
 set CertTempl=ServerSSLCertificate.conf
 
 :AllCerts
