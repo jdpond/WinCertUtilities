@@ -19,7 +19,7 @@ exit
 
 :PickCertType
 echo Which Certificate type do you wish to request?
-FOR /F "usebackq delims=" %%i in (`dir *.conf /B`) do (
+FOR /F "usebackq delims=" %%i in (`dir etc\*.conf /B`) do (
 	set /a N += 1
 	set v!N!=%%i
 	if "%%~ni" == "%DefaultCertType%" (echo !N!^) %%~ni [Default]
@@ -78,7 +78,7 @@ goto :AllCerts
 md %CertName%
 
 :NoNewDir
-%OpenSSLExe% req -new -keyout "%CertName%\%CertName%.privatekey.pem"  -days 730 -out "%CertName%\%CertName%.csr.txt" -config "%CertTempl%"
+%OpenSSLExe% req -new -keyout "%CertName%\%CertName%.privatekey.pem"  -days 730 -out "%CertName%\%CertName%.csr.txt" -config "etc\%CertTempl%"
 FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) do cacls "%CertName%" /E /R %%i >nul
 
 echo.

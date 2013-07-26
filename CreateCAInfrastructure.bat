@@ -6,8 +6,15 @@ Rem @author Jack D. Pond
 Rem @version 0.2 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description Create a complete CA infrastructure including a CA Root, an email CA, a code signing CA and a TLS (SSL client and server) CA
+Rem @param If parameter passed, must correspond to a valid conf file (without the extension) for building a CA.
 Rem
 call "etc/CertConfig.bat"
+
+if "%1" == "" (
+	set CA_Build=ALL
+) else (
+	set CA_Build=%1
+)	
 
 :AllCerts
 
@@ -20,10 +27,11 @@ goto :eof
 
 :CertNameEntered
 
-call :CheckIfExists rootca_%CertName%
-call :CheckIfExists emailca_%CertName%
-call :CheckIfExists signcodeca_%CertName%
-call :CheckIfExists tlsca_%CertName%
+call :CheckIfExists rootca %CertName%
+call :CheckIfExists emailca %CertName%
+call :CheckIfExists signcodeca %CertName%
+call :CheckIfExists tlsca %CertName%
+call :CheckIfExists developerca %CertName%
 
 :AuthorityDays
 
@@ -49,10 +57,11 @@ goto :AuthorityDays
 
 :GenKeys
 
-call :NewDir rootca_%CertName%
-call :NewDir tlsca_%CertName%
-call :NewDir emailca_%CertName%
-call :NewDir signcodeca_%CertName%
+call :NewDir rootca %CertName%
+call :NewDir tlsca %CertName%
+call :NewDir emailca %CertName%
+call :NewDir signcodeca %CertName%
+call :NewDir developerca %CertName%
 
 echo Where would you like to distribute your public certificates [e.g: http://www.yoursite.com/certs]
 set /p CIDP_URL=Public Certificate Distribution Point? 
@@ -74,18 +83,10 @@ call :MakeRoot rootca %CertName% %RADays%
 call :MakeOtherCAs signcodeca %CertName% %RADays% 
 call :MakeOtherCAs tlsca %CertName% %RADays% 
 call :MakeOtherCAs emailca %CertName% %RADays% 
+call :MakeOtherCAs developerca %CertName% %RADays% 
 
 pause
 goto :eof
-
-%OpenSSLExe% genrsa -des3 -out "%CertName%/%CertName%.key" 4096
-%OpenSSLExe% req -new -x509 -days 1826 -key "%CertName%/%CertName%.key" -out "%CertName%/%CertName%_root.crt"
-%OpenSSLExe% genrsa -des3 -out "%CertName%/%CertName%.ia.key" 4096
-%OpenSSLExe% req -new -key "%CertName%/%CertName%.ia.key" -out "%CertName%/%CertName%.ia.csr"
-pause
-%OpenSSLExe% x509 -req -days 730 -in "%CertName%/%CertName%.ia.csr" -CA "%CertName%/%CertName%.crt" -CAkey "%CertName%/%CertName%.key" -set_serial 01 -out "%CertName%/%CertName%.ia.crt"
-
-FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) do cacls "%CertName%" /E /R %%i >nul
 
 echo.
 echo Three files have been created:
@@ -120,29 +121,60 @@ pause
 goto :eof
 
 :CheckIfExists
+if %1 == %CA_BUILD% (
+	call :SCheckIfExists %1 %2
+) else (
+	if %1 == ALL call :SCheckIfExists %1 %2
+)
+goto :eof
+
+:SCheckIfExists
 if NOT EXIST %1 goto :eof
-echo That CA directory ^(%1^) already exists, you might overwrite an existing Certificate Authority - THIS COULD BE REALLY BAD. 
+echo That CA directory ^(%1_%2^) already exists, you might overwrite an existing Certificate Authority - THIS COULD BE REALLY BAD. 
 set /p FExists=Are you absolutely sure^(Y/N^)?[N]: 
 if not defined FExists goto :AllCerts
 if %FExists% == Y goto :eof
 exit -1
 
 :NewDir
-if NOT EXIST %1 mkdir %1
-if NOT EXIST "%1/db" mkdir "%1/db"
-if NOT EXIST "%1/crl" 	mkdir "%1/crl"
-if NOT EXIST "%1/certs" mkdir "%1/certs"
-if NOT EXIST "%1/private" mkdir "%1/private"
-if NOT EXIST "%1/etc" mkdir "%1/etc"
-copy /Y "etc\*.conf" "%1\etc\*.*" > nul
-type NUL > "%1/db/%1.db"
-type NUL > "%1/db/%1.db.attr"
-@echo 01 > "%1/db/%1.crt.srl"
-@echo 01 > "%1/db/%1.crl.srl"
-@cacls %1 /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
+
+if %1 == %CA_BUILD% (
+	call :SNewDir %1 %2
+) else (
+	if %CA_BUILD% == ALL call :SNewDir %1 %2
+)
+goto :eof
+
+:SNewDir
+
+if NOT EXIST %1_%2 mkdir %1_%2
+if NOT EXIST "%1_%2/db" mkdir "%1_%2/db"
+if NOT EXIST "%1_%2/crl" 	mkdir "%1_%2/crl"
+if NOT EXIST "%1_%2/certs" mkdir "%1_%2/certs"
+if NOT EXIST "%1_%2/private" mkdir "%1_%2/private"
+if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc"
+if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc/ClientConfigurations"
+if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc/CAConfigurations"
+if NOT EXIST "%1_%2/rqsts" mkdir "%1_%2/rqsts"
+if NOT EXIST "%1_%2/pending_rqsts" mkdir "%1_%2/pending_rqsts"
+copy /Y "etc\%1.conf" "%1_%2\etc\CAConfigurations\*.*" > nul
+type NUL > "%1_%2/db/%1_%2.db"
+type NUL > "%1_%2/db/%1_%2.db.attr"
+@echo 01 > "%1_%2/db/%1_%2.crt.srl"
+@echo 01 > "%1_%2/db/%1_%2.crl.srl"
+@cacls %1_%2 /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
 goto :eof
 
 :MakeRoot
+
+if %1 == %CA_BUILD% (
+	call :SMakeRoot %1 %2 %3
+) else (
+	if %CA_BUILD% == ALL call :SMakeRoot %1 %2 %3
+)
+goto :eof
+
+:SMakeRoot
 echo #################################################################################
 echo ###
 echo ###       You are creating a %1 authority named %1_%2
@@ -150,16 +182,25 @@ echo ###
 echo #################################################################################
 set CA_NAME=%1_%2
 Rem Create the key and request
-%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
+%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
 REM Self-sign the request 
-%OpenSSLExe% ca -selfsign -config "%1_%2/etc/%1.conf" -name %1 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt" -extensions %1_ext -enddate 310101000000Z
+%OpenSSLExe% ca -selfsign -config "%1_%2/etc/CAConfigurations/%1.conf" -name %1 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt" -extensions %1_ext -enddate 310101000000Z
 REM Generate the empty CRL
-%OpenSSLExe% ca -gencrl -config "%1_%2/etc/%1.conf" -out "%1_%2/crl/%1_%2.crl"
+%OpenSSLExe% ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
 %OpenSSLExe% x509 -outform der -in "%1_%2\%1_%2.crt" -out "%1_%2\%1_%2.cer" 
 %OpenSSLExe% crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl"
 goto :eof
 
 :MakeOtherCAs
+if %1 == %CA_BUILD% (
+	call :SMakeOtherCAs %1 %2 %3
+) else (
+	if %CA_BUILD% == ALL call :SMakeOtherCAs %1 %2 %3
+)
+goto :eof
+
+:SMakeOtherCAs
+
 set CA_NAME=%1_%2
 echo #################################################################################
 echo ### 
@@ -167,13 +208,13 @@ echo ###       You are creating a %1 authority named %1_%2
 echo ###
 echo #################################################################################
 Rem Create the key and request
-%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
+%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
 REM sign the request
 set CA_NAME=rootca_%2
-%OpenSSLExe% ca -config "rootca_%2/etc/rootca.conf" -name signingca -extensions signingca_ext -days %3 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt"
+%OpenSSLExe% ca -config "rootca_%2/etc/CAConfigurations/rootca.conf" -name signingca -extensions signingca_ext -days %3 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt"
 REM Generate the empty and DER versions of both (required for publication according to RFC 2585, http://tools.ietf.org/html/rfc2585.html#section-4.2
 set CA_NAME=%1_%2
-%OpenSSLExe% ca -gencrl -config "%1_%2/etc/%1.conf" -out "%1_%2/crl/%1_%2.crl"
+%OpenSSLExe% ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
 copy /b /Y %1_%2\%1_%2.crt+rootca_%2\rootca_%2.crt %1_%2\%1_%2.chain.pem >nul
 %OpenSSLExe% x509 -outform der -in "%1_%2\%1_%2.crt" -out "%1_%2\%1_%2.cer" 
 %OpenSSLExe% crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl"
