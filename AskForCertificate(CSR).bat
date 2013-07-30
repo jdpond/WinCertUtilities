@@ -61,7 +61,7 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 if NOT EXIST %CertName% mkdir %CertName%
 if NOT EXIST "%CertName%/private" mkdir "%CertName%/private"
 if NOT EXIST "%CertName%/etc" mkdir "%CertName%/etc"
-copy /Y "etc\%Picked_Name%" "%CertName%\etc\*.*" > nul
+copy /Y "etc\ClientConfigurations\%Picked_Name%" "%CertName%\etc\*.*" > nul
 
 %OpenSSLExe% req -new -keyout "%CertName%/private/%CertName%.key" -days 730 -out "%CertName%/%CertName%.csr.txt" -config "etc/ClientConfigurations/%Picked_Name%"
 
