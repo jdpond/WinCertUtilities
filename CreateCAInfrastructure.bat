@@ -1,10 +1,10 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreateNewCertificate</b> command file.
+Rem <b>CreateCAInfrastructure</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.2 / Windows Batch Processor
-Rem @see https://github.com/jdpond/WinCertUtilities/wiki
+Rem @see https://github.com/jdpond/WinCertUtilities/wiki and http://pki-tutorial.readthedocs.org/en/latest/index.html#
 Rem @description Create a complete CA infrastructure including a CA Root, an email CA, a code signing CA and a TLS (SSL client and server) CA
 Rem @param If parameter passed, must correspond to a valid conf file (without the extension) for building a CA.
 Rem
@@ -57,11 +57,6 @@ goto :AuthorityDays
 
 :GenKeys
 
-call :NewDir rootca %CertName%
-call :NewDir tlsca %CertName%
-call :NewDir emailca %CertName%
-call :NewDir signcodeca %CertName%
-call :NewDir developerca %CertName%
 
 echo Where would you like to distribute your public certificates [e.g: http://www.yoursite.com/certs]
 set /p CIDP_URL=Public Certificate Distribution Point? 
@@ -78,6 +73,13 @@ if defined CRL_URL goto :CRLURL
 set CRL_URL=%CIDPURL%
 
 :CRLURL
+call :NewDir rootca %CertName%
+call :NewDir tlsca %CertName%
+call :NewDir emailca %CertName%
+call :NewDir signcodeca %CertName%
+call :NewDir developerca %CertName%
+
+
 
 call :MakeRoot rootca %CertName% %RADays% 
 call :MakeOtherCAs signcodeca %CertName% %RADays% 
@@ -129,7 +131,7 @@ if %1 == %CA_BUILD% (
 goto :eof
 
 :SCheckIfExists
-if NOT EXIST %1 goto :eof
+if NOT EXIST %1_%2 goto :eof
 echo That CA directory ^(%1_%2^) already exists, you might overwrite an existing Certificate Authority - THIS COULD BE REALLY BAD. 
 set /p FExists=Are you absolutely sure^(Y/N^)?[N]: 
 if not defined FExists goto :AllCerts
@@ -146,6 +148,8 @@ if %1 == %CA_BUILD% (
 goto :eof
 
 :SNewDir
+set _caname=%1
+set _certname=%2
 
 if NOT EXIST %1_%2 mkdir %1_%2
 if NOT EXIST "%1_%2/db" mkdir "%1_%2/db"
@@ -153,11 +157,14 @@ if NOT EXIST "%1_%2/crl" 	mkdir "%1_%2/crl"
 if NOT EXIST "%1_%2/certs" mkdir "%1_%2/certs"
 if NOT EXIST "%1_%2/private" mkdir "%1_%2/private"
 if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc"
-if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc/ClientConfigurations"
-if NOT EXIST "%1_%2/etc" mkdir "%1_%2/etc/CAConfigurations"
+if NOT EXIST "%1_%2/etc/ClientConfigurations" mkdir "%1_%2/etc/ClientConfigurations"
+if NOT EXIST "%1_%2/etc/CAConfigurations" mkdir "%1_%2/etc/CAConfigurations"
 if NOT EXIST "%1_%2/rqsts" mkdir "%1_%2/rqsts"
 if NOT EXIST "%1_%2/pending_rqsts" mkdir "%1_%2/pending_rqsts"
-copy /Y "etc\%1.conf" "%1_%2\etc\CAConfigurations\*.*" > nul
+rem copy /Y "etc\%1.conf" "%1_%2\etc\CAConfigurations\*.*" > nul
+type NUL > "%1_%2\etc\CAConfigurations\%1.conf"
+for /f "usebackq tokens=* delims=" %%f in (etc\CAConfigurations\%1.conf) do call :parseit %%f
+
 type NUL > "%1_%2/db/%1_%2.db"
 type NUL > "%1_%2/db/%1_%2.db.attr"
 @echo 01 > "%1_%2/db/%1_%2.crt.srl"
@@ -218,4 +225,24 @@ set CA_NAME=%1_%2
 copy /b /Y %1_%2\%1_%2.crt+rootca_%2\rootca_%2.crt %1_%2\%1_%2.chain.pem >nul
 %OpenSSLExe% x509 -outform der -in "%1_%2\%1_%2.crt" -out "%1_%2\%1_%2.cer" 
 %OpenSSLExe% crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl"
+goto :eof
+
+FOR /F "usebackq tokens=* delims=" %%a in (`"findstr /n ^^ \etc\CAConfigurations\!_caname!.conf"`) do (
+)
+
+:parseit
+set _line=%*
+if "!_line:~0,7!" == "CRL_URL" (
+	echo CRL_URL					= !CRL_URL!			^# Base URL for CRL Distribution Point >> "!_caname!_!_certname!\etc\CAConfigurations\!_caname!.conf"
+) else (
+	if "!_line:~0,8!" == "CIDP_URL" (
+		echo CIDP_URL				= %CIDP_URL%			^# Base address for Certificate Issuer^'s Distribution Point >> "!_caname!_!_certname!\etc\CAConfigurations\!_caname!.conf"
+	) else (
+		if "!_line!" == "" (
+			echo .
+		) else (
+			echo !_line! >> "!_caname!_!_certname!\etc\CAConfigurations\!_caname!.conf"
+		)
+	)
+)
 goto :eof
