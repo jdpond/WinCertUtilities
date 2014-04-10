@@ -17,12 +17,12 @@ if "%1" NEQ "" (
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.private.key" goto :ValidCertName
+	if exist "!CertName!\private\!CertName!.key" goto :ValidCertName
 )
 
 
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.private.key" (
+	if exist "%%i\private\%%i.key" (
 		set /a DirCount += 1
 		set v!DirCount!=%%i
 		echo !DirCount!^) %%~ni
@@ -38,7 +38,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if not defined DirCount ( 
 	echo.
-	echo You do not have a valid certificate set ready for renewal.  You need to have a full key set ^(%%name%%\%%name%%.private.key^)
+	echo You do not have a valid certificate set ready for renewal.  You need to have a full key set ^(%%name%%\%%name%%.key^)
 	echo.
 	echo If you have not done so already, you can create a such a set from scratch by following the required instructions by using the RequestNewCert.bat command file.
 	echo.
@@ -93,7 +93,7 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	goto :eof
 )
 
-%OpenSSLExe% x509 -x509toreq -signkey "%CertName%\%CertName%.private.key" -out "%CertName%\%CertName%.renew.csr.txt" -in "%CertName%\%CertName%.crt"
+%OpenSSLExe% x509 -x509toreq -signkey "%CertName%\private\%CertName%.key" -out "%CertName%\%CertName%.renew.csr.txt" -in "%CertName%\%CertName%.crt"
 
 echo.
 echo The following file has been created:
