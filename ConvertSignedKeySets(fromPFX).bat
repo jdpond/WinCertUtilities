@@ -24,11 +24,11 @@ if "%1" NEQ "" (
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.private.pfx" goto :ValidCertName
+	if exist "!CertName!\!CertName!.pfx" goto :ValidCertName
 )
 
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.private.pfx" (
+	if exist "%%i\%%i.pfx" (
 		set /a DirCount += 1
 		set v!DirCount!=%%i
 		echo !DirCount!^) %%~ni
@@ -43,7 +43,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if not defined DirCount ( 
 	echo.
-	echo You do not have a valid public/private certificate ready for conversion.  You need to have a private key ^(%%name%%\%%name%%.private.pfx^)
+	echo You do not have a valid public/private certificate ready for conversion.  You need to have a private key ^(%%name%%\%%name%%.pfx^)
 	echo in a named sub directory ^(%%name%%^).
 	echo.
 	echo If you have not done so already, you can create a private certificate and follow the required instructions by using the RequestNewCert.bat command file.
@@ -86,7 +86,7 @@ if %CertID% GTR 0 if %CertID% LEQ !DirCount! if %CertID% LEQ 20 (
 )
 
 :ValidCertName
-if exist "%CertName%\%CertName%.private.pem" (
+if exist "%CertName%\%CertName%.pem" (
 	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
 	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%"^(y,n^)[y]?:
@@ -99,11 +99,11 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 )
 
 :CertNameEntered
-%OpenSSLExe%  pkcs12 -in "%CertName%\%CertName%.private.pfx" -out "%CertName%\%CertName%.private.pem"
+%OpenSSLExe%  pkcs12 -in "%CertName%\%CertName%.pfx" -out "%CertName%\%CertName%.pem"
 
 echo.
 echo The following file has been created:
-echo       PEM Key set - %CertName%.private.pem
+echo       PEM Key set - %CertName%.pem
 echo.
 pause
 

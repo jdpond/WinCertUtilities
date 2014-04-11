@@ -1,7 +1,7 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreateEncryptedKey(fromPasswordless)</b> command file.
+Rem <b>CreateEncryptedKey(from 509key)</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki
@@ -10,95 +10,114 @@ Rem @param CertName - Name of the certificate corresponding to directory and cer
 
 call "etc/CertConfig.bat"
 
+if exist %OpenSSLExe% goto :PickCertName
+echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat
+echo You can download this open source system from:  http://www.openssl.org/related/binaries.html
+echo If you loaded the system into a non-standard directory, you will have to modify CertConfig.bat to specify the proper location
+echo.
+pause
+exit
+
 :PickCertName
 if "%1" NEQ "" (
 	set CertName=%1
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.nopass.key" goto :ValidCertName
+	if exist "!CertName!\private\!CertName!.nopass.key" goto :ValidCertName
 )
 
-
+echo Create a private, encrypted ^(aes256^) RSA key ^(pem^) from a 509v3 unencrypted key
+echo.
+set DirNames=
+set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 	if exist "%%i\%%i.nopass.key" (
 		set /a DirCount += 1
-		set v!DirCount!=%%i
-		echo !DirCount!^) %%~ni
-		if !DirCount! GTR 20 (
-			echo.
-			echo This utility can only handle up to 20 keys.  You will only be able to select up to the first 20 keys.
-			echo.
-			pause
+		if !DirCount! GTR 1 Set DirNames=!DirNames!,
+		Set DirNames=!DirNames!%%i
 		)
 	)
 )
 
-
-if not defined DirCount ( 
+if !DirCount! == 0 ( 
 	echo.
-	echo You do not have a valid certificate set ready for conversion.  You need to have a passwordless key ^(%%name%%\%%name%%.nopass.pem^)
-	echo.
-	echo If you have not done so already, you can create a such a set from scratch by following the required instructions by using the RequestNewCert.bat command file.
+	echo You do not have a unencrypted PEM key in your path.  You need to have a unencrypted key ^(%%name%%\private\%%name%%.nopass.key^)
+	echo in a named sub directory ^(%%name%%^).
 	echo.
 	pause
 	goto :eof
 )
 
-if %DirCount% == 1 (
-	set CertID=1
+if !DirCount! == 1 (
+	set Picked_Name=!DirNames!
+	goto :ValidCAName
 ) else (
-	set /p CertID=From which Certificate set do you wish to create the private encrypted key ^(by number^)?: 
+	call :parsenames "!DirNames!" 1
+	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
+	if "!CertID!" == "q" goto :eof
 )
 
-if %CertID% GTR 0 if %CertID% LEQ !DirCount! if %CertID% LEQ 20 (
-	if !CertID! == 1 set CertName=!V1!
-	if !CertID! == 2 set CertName=!V2!
-	if !CertID! == 3 set CertName=!V3!
-	if !CertID! == 4 set CertName=!V4!
-	if !CertID! == 5 set CertName=!V5!
-	if !CertID! == 6 set CertName=!V6!
-	if !CertID! == 7 set CertName=!V7!
-	if !CertID! == 8 set CertName=!V8!
-	if !CertID! == 9 set CertName=!V9!
-	if !CertID! == 10 set CertName=!V10!
-	if !CertID! == 11 set CertName=!V11!
-	if !CertID! == 12 set CertName=!V12!
-	if !CertID! == 13 set CertName=!V13!
-	if !CertID! == 14 set CertName=!V14!
-	if !CertID! == 15 set CertName=!V15!
-	if !CertID! == 16 set CertName=!V16!
-	if !CertID! == 17 set CertName=!V17!
-	if !CertID! == 18 set CertName=!V18!
-	if !CertID! == 19 set CertName=!V19!
-	if !CertID! == 20 set CertName=!V20!
+if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
+	call :picklist "!DirNames!" !CertID! 1
 ) else (
-	echo Invalid Selection, must be 1-!%DirCount%! and Less than or equal to 20
+	echo.
+	echo Invalid Selection, must be 1-!DirCount!
 	echo.
 	goto :PickCertName
 )
 
 :ValidCertName
 
-if exist "%CertName%\%CertName%.private.key" (
-	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%CertName%"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
+if exist "%Picked_Name%\private\%Picked_Name%.key" (
+	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
-	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%CertName%"^(y,n^)[y]?:
+	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(y,n^)[y]?:
 )
 if "%CertConfirm%" == "" set CertConfirm=y
 if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
-	echo You elected NOT to create key "%CertName%"
+	echo You elected NOT to create key "%Picked_Name%"
 	pause
 	goto :eof
 )
 
-%OpenSSLExe% rsa -aes256 -in "%CertName%\%CertName%.nopass.key" -out "%CertName%\%CertName%.private.key" 
+%OpenSSLExe% rsa -aes256 -in "%Picked_Name%\private\%Picked_Name%.nopass.key" -out "%Picked_Name%\private\%Picked_Name%.key" 
 
 echo.
 echo The following file has been created:
-echo       Private no password RSA Key - ^>^>^> %CD%\%CertName%\%CertName%.private.key ^<^<^<
+echo       Private no password RSA Key - ^>^>^> %CD%\%CertName%\%CertName%.key ^<^<^<
 echo.
 pause
+goto :eof
 
-:eof
+:parsenames
+set list=%1
+set list=%list:"=%
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if not "%%a" == "" echo %2^) %%a
+	if not "%%b" == "" (
+		set /a NextNum=%2+1
+		call :parsenames "%%b" !NextNum!
+	)
+)
+exit /b
 
+:printname
+echo %2^) %1
+exit /b
+
+:picklist
+set list=%1
+set list=%list:"=%
+set NextNum=%3
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if !NextNum! == %2 (
+		Set Picked_Name=%%a
+		exit /b 
+	)
+	if not "%%b" == "" (
+		set /a NextNum += 1
+		call :picklist "%%b" %2 !NextNum! 
+	)
+)
+exit /b

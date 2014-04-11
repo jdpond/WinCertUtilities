@@ -92,7 +92,7 @@ goto :eof
 
 echo.
 echo Three files have been created:
-echo		%CD%\%CertName%\%CertName%Root.private.key - Private Key ^(Required when used to generate further CAs^)
+echo		%CD%\%CertName%\%CertName%Root.key - Private Key ^(Required when used to generate further CAs^)
 echo		%CD%\%CertName%\%CertName%Root.csr.txt - Certificate Signing Request ^(CSR^)
 echo.
 echo Copy the following instructions and save them, or use the readme file at:

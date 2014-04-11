@@ -11,6 +11,7 @@ Rem @description   Additionally, it creates the public key x.509v3 key (.pub) an
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
 call "etc/CertConfig.bat"
+
 if exist %OpenSSLExe% goto :PickCertName
 echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat
 echo You can download this open source system from:  http://www.openssl.org/related/binaries.html
@@ -20,78 +21,59 @@ pause
 exit
 
 :PickCertName
-
 if "%1" NEQ "" (
 	set CertName=%1
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.private.key" goto :ValidCertName
+	if exist "!CertName!\private\!CertName!.key" goto :ValidCertName
 )
 
+echo Create an SSH2 keyset from an encrypted 509 key ^(private.key^)
+echo.
+set DirNames=
+set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.private.key" (
+	if exist "%%i\private\%%i.key" (
 		set /a DirCount += 1
-		set v!DirCount!=%%i
-		echo !DirCount!^) %%~ni
-		if !DirCount! GTR 20 (
-			echo.
-			echo This utility can only handle up to 20 keys.  You will only be able to select up to the first 20 keys.
-			echo.
-			pause
+		if !DirCount! GTR 1 Set DirNames=!DirNames!,
+		Set DirNames=!DirNames!%%i
 		)
 	)
 )
 
-if not defined DirCount ( 
+if !DirCount! == 0 ( 
 	echo.
-	echo You do not have a valid private certificate ready for conversion.  You need to have a private key ^(%%name%%\%%name%%.privatekey.pem^)
+	echo You do not have a valid certificate set ready for conversion.  You need to have a full key set ^(%%name%%\private\%%name%%.key^)
 	echo in a named sub directory ^(%%name%%^).
-	echo.
-	echo If you have not done so already, you can create a private certificate and follow the required instructions by using the CreateServerSSLCertRequest.bat command file.
 	echo.
 	pause
 	goto :eof
 )
 
-if %DirCount% == 1 (
-	set CertID=1
+if !DirCount! == 1 (
+	set Picked_Name=!DirNames!
+	goto :ValidCAName
 ) else (
-	set /p CertID=From which Certificate do you wish to create a key set ^(by number^)?: 
+	call :parsenames "!DirNames!" 1
+	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
+	if "!CertID!" == "q" goto :eof
 )
 
-if %CertID% GTR 0 if %CertID% LEQ !DirCount! if %CertID% LEQ 20 (
-	if !CertID! == 1 set CertName=!V1!
-	if !CertID! == 2 set CertName=!V2!
-	if !CertID! == 3 set CertName=!V3!
-	if !CertID! == 4 set CertName=!V4!
-	if !CertID! == 5 set CertName=!V5!
-	if !CertID! == 6 set CertName=!V6!
-	if !CertID! == 7 set CertName=!V7!
-	if !CertID! == 8 set CertName=!V8!
-	if !CertID! == 9 set CertName=!V9!
-	if !CertID! == 10 set CertName=!V10!
-	if !CertID! == 11 set CertName=!V11!
-	if !CertID! == 12 set CertName=!V12!
-	if !CertID! == 13 set CertName=!V13!
-	if !CertID! == 14 set CertName=!V14!
-	if !CertID! == 15 set CertName=!V15!
-	if !CertID! == 16 set CertName=!V16!
-	if !CertID! == 17 set CertName=!V17!
-	if !CertID! == 18 set CertName=!V18!
-	if !CertID! == 19 set CertName=!V19!
-	if !CertID! == 20 set CertName=!V20!
+if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
+	call :picklist "!DirNames!" !CertID! 1
 ) else (
-	echo Invalid Selection, must be 1-!%DirCount%! and Less than or equal to 20
+	echo.
+	echo Invalid Selection, must be 1-!DirCount!
 	echo.
 	goto :PickCertName
 )
 
 :ValidCertName
-if exist "%CertName%\%CertName%.SSH2.key" (
-	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
+if exist "%CertName%\private\%CertName%.SSH2.key" (
+	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%.SSH2.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
-	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%"^(y,n^)[y]?:
+	set /p CertConfirm=Are you sure you want to create a new SSH2 key "%CertName%.SSH2.key"^(y,n^)[y]?:
 )
 if "%CertConfirm%" == "" set CertConfirm=y
 if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
@@ -113,19 +95,19 @@ rem <nul: set /p PassPhrase=What is the passphrase on "%CertName%.privatekey.pem
 rem for /f "delims=" %%i in ('cscript /nologo GetPassPhrase.vbs') do set PassPhrase=%%i
 
 
-%OpenSSLExe% rsa -aes256 -inform PEM -in "%CertName%\%CertName%.private.key" -outform PEM -out "%CertName%\%CertName%.SSH2.key"
+%OpenSSLExe% rsa -aes256 -inform PEM -in "%Picked_Name%\private\%Picked_Name%.key" -outform PEM -out "%Picked_Name%\private\%Picked_Name%.SSH2.key"
 
 if not %sshkeygenExe% == "" (
-	%sshkeygenExe% -f "%CertName%\%CertName%.SSH2.key" -y %FriendlyName% >"%CD%\%CertName%\%CertName%.SSH2.pub"
+	%sshkeygenExe% -f "%Picked_Name%\private\%Picked_Name%.SSH2.key" -y %FriendlyName% >"%CD%\%Picked_Name%\%Picked_Name%.SSH2.pub"
 )
 
 :NoAuthKey
 
 echo.
 echo The following files have been created:
-echo		%CD%\%CertName%\%CertName%.SSH2.key - Private SSH2 Key
+echo		%CD%\%Picked_Name%\private\%Picked_Name%.SSH2.key - Private SSH2 Key
 if not %sshkeygenExe% == "" (
-	echo		%CD%\%CertName%\%CertName%.SSH2.pub - Public RSA Key
+	echo		%CD%\%Picked_Name%\%CertName%.SSH2.pub - Public RSA Key
 ) else (
 	echo.
 	echo Unable to create the public RSA/SSH2 key.  Couldn't find a version of ssh-keygen.
@@ -134,6 +116,36 @@ if not %sshkeygenExe% == "" (
 
 :NoAuthKeyPrint
 echo.
-pause
+goto :eof
 
-:eof
+:parsenames
+set list=%1
+set list=%list:"=%
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if not "%%a" == "" echo %2^) %%a
+	if not "%%b" == "" (
+		set /a NextNum=%2+1
+		call :parsenames "%%b" !NextNum!
+	)
+)
+exit /b
+
+:printname
+echo %2^) %1
+exit /b
+
+:picklist
+set list=%1
+set list=%list:"=%
+set NextNum=%3
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if !NextNum! == %2 (
+		Set Picked_Name=%%a
+		exit /b 
+	)
+	if not "%%b" == "" (
+		set /a NextNum += 1
+		call :picklist "%%b" %2 !NextNum! 
+	)
+)
+exit /b

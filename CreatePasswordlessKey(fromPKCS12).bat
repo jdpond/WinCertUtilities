@@ -16,12 +16,12 @@ if "%1" NEQ "" (
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.private.pfx" goto :ValidCertName
+	if exist "!CertName!\!CertName!.pfx" goto :ValidCertName
 )
 
 
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.private.pfx" (
+	if exist "%%i\%%i.pfx" (
 		set /a DirCount += 1
 		set v!DirCount!=%%i
 		echo !DirCount!^) %%~ni
@@ -37,7 +37,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if not defined DirCount ( 
 	echo.
-	echo You do not have a valid certificate set ready for conversion.  You need to have a full key set ^(%%name%%\%%name%%.private.pfx^)
+	echo You do not have a valid certificate set ready for conversion.  You need to have a full key set ^(%%name%%\%%name%%.pfx^)
 	echo.
 	echo If you have not done so already, you can create a such a set from scratch by following the required instructions by creating a new set command file.
 	echo.
@@ -92,7 +92,7 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	goto :eof
 )
 
-%OpenSSLExe% pkcs12 -in "%CertName%\%CertName%.private.pfx" -out "%CertName%\%CertName%.nopass.pfx"
+%OpenSSLExe% pkcs12 -in "%CertName%\%CertName%.pfx" -out "%CertName%\%CertName%.nopass.pfx"
 
 echo.
 echo The following file has been created:
