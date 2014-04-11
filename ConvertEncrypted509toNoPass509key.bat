@@ -1,7 +1,7 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreateEncryptedKey(from 509key)</b> command file.
+Rem <b>ConvertNoPassPrivateToPassPrivate</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki
@@ -42,7 +42,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if !DirCount! == 0 ( 
 	echo.
-	echo You do not have a unencrypted PEM key in your path.  You need to have a unencrypted key ^(%%name%%\private\%%name%%.nopass.key^)
+	echo You do not have and unprotected key in your path.  You need to have a unencrypted password protected key ^(%%name%%\private\%%name%%.nopass.key^)
 	echo in a named sub directory ^(%%name%%^).
 	echo.
 	pause
@@ -85,7 +85,7 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 
 echo.
 echo The following file has been created:
-echo       Private no password RSA Key - ^>^>^> %CD%\%CertName%\%CertName%.key ^<^<^<
+echo       Private with password Key - ^>^>^> %CD%\%CertName%\Private\%CertName%.key ^<^<^<
 echo.
 pause
 goto :eof
