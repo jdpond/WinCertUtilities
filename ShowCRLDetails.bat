@@ -5,7 +5,7 @@ Rem <b>CARevokeCRT</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.2 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki and http://pki-tutorial.readthedocs.org/en/latest/index.html#
-Rem @description Revoke an x.509 (.crt) certificate .
+Rem @description Revoke an x.509 (.crl) certificate .
 Rem @param CA_SIGN_NAME - Name of the certificate corresponding to directory and CA_SIGN_NAMEs
 
 call "etc/CertConfig.bat"
@@ -19,7 +19,7 @@ if "%1" NEQ "" (
 )
 
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\pending_rqsts\*.crt" (
+	if exist "%%i\crl\*.crl" (
 		set /a DirCount += 1
 		if !DirCount! GTR 1 Set DirNames=!DirNames!,
 		Set DirNames=!DirNames!%%i
@@ -27,9 +27,9 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 )
 if not defined DirCount ( 
 	echo.
-	echo You have no more pending CSR requests
+	echo You have no Certificate Revocation Lists^(CRLs^)
 	echo To set up a CA, you may want to use the CA INfrastruction Creation Tool^(CreateCAInfrastructure^).
-	echo If you have a CA set up, you may need to copy your CSR into the appropriate "pending_rqsts" directory.
+	echo If you have a CA set up, you may need to copy your CSR into the appropriate "crl" directory.
 	echo.
 	pause
 	goto :eof
@@ -39,7 +39,7 @@ if !DirCount! == 1 (
 	goto :ValidCAName
 ) else (
 	call :parsenames "!DirNames!" 1
-	set /p CertID=With which Certificate Authority do you wish to use to revoke ^(by number^)[or q to quit]?: 
+	set /p CertID=For which Certificate Authority do you wish to see a Certificate Revocation List^(CRL^)^(by number^)[or q to quit]?: 
 	if "!CertID!" == "q" goto :eof
 )
 
@@ -57,7 +57,7 @@ Set CA_SIGN_NAME=!Picked_Name!
 :GetValidCertName
 set /a DirCount = 0
 Set DirNames=
-FOR /F "usebackq delims=" %%i in (`dir /B "!CA_SIGN_NAME!\pending_rqsts\*.crt"`) do (
+FOR /F "usebackq delims=" %%i in (`dir /B "!CA_SIGN_NAME!\crl\*.crl"`) do (
 	set /a DirCount += 1
 	if !DirCount! GTR 1 Set DirNames=!DirNames!,
 	Set DirNames=!DirNames!%%~ni
@@ -67,7 +67,7 @@ if !DirCount! == 1 (
 	goto :ValidCertName
 ) else (
 	call :parsenames "!DirNames!" 1
-	set /p CertID=With which Certificate do you wish to sign ^(by number^)[or q to quit]?: 
+	set /p CertID=Which Certificate Revocation List^(CRL^) do wish to see details for^(by number^)[or q to quit]?: 
 	if "!CertID!" == "q" goto :eof
 )
 if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
@@ -80,52 +80,13 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 )
 
 :ValidCertName
-Set CertName=!Picked_Name!
-:GetValidConfName
-set /a DirCount = 0
-Set DirNames=
-FOR /F "usebackq delims=" %%i in (`dir /B "!CA_SIGN_NAME!\etc\CAConfigurations\*.conf"`) do (
-	set /a DirCount += 1
-	if !DirCount! GTR 1 Set DirNames=!DirNames!,
-	Set DirNames=!DirNames!%%i
-)
-if !DirCount! == 1 (
-	set Picked_Name=!DirNames!
-	goto :ValidConfName
-) else (
-	call :parsenames "!DirNames!" 1
-	set /p CertID=With which CA Certificate Configuration do you wish to sign with ^(by number^)[or q to quit]?: 
-	if "!CertID!" == "q" goto :eof
-)
-if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
-	call :picklist "!DirNames!" !CertID! 1
-) else (
-	echo.
-	echo Invalid Selection, must be 1-!DirCount! 
-	echo.
-	goto :GetValidConfName
-)
-
-:ValidConfName
 Rem 
-Rem Actually performs signature here
+Rem Actually shows the details here
 Rem 
-echo Certificate Authority !CA_SIGN_NAME! Revoking Certificate: !CertName! Conf: !Picked_Name!
+echo Certificate Authority !CA_SIGN_NAME! crl: !CertName!
 set CA_NAME=!CA_SIGN_NAME!
-%OpenSSLExe% ca -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!" -revoke "!CA_SIGN_NAME!/pending_rqsts/!CertName!.crt"
+%OpenSSLExe% crl -inform DER -in "!CA_SIGN_NAME!/crl/!Picked_Name!.crl" -text
 if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
-rem Then move from pending_rqsts to rqsts
-rem Regenerate the revokation (CRL List)
-move "!CA_SIGN_NAME!\pending_rqsts\!CertName!.crt" "!CA_SIGN_NAME!\rqsts\!CertName!.crt"
-if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
-%OpenSSLExe% ca -gencrl -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!"  -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem"
-if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
-%OpenSSLExe% crl -inform PEM -in "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem" -outform DER -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.crl"
-if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
-echo.
-echo The CRL file has been created.  You need to upload it into your Certificate Distribution Point (CDP):
-echo		%cd%/!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.crl - Updated CRL
-echo.
 pause
 goto :eof
 

@@ -122,6 +122,7 @@ goto :eof
 :parsenames
 set list=%1
 set list=%list:"=%
+set NextNum=%2
 FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
 	if not "%%a" == "" echo %2^) %%a
 	if not "%%b" == "" (
