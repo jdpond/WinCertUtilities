@@ -35,7 +35,10 @@ if %FExists% == Y goto :NoNewDir
 goto :AllCerts
 
 :NewDir
-md %CertName%
+if NOT EXIST "%CertName%" mkdir %CertName%
+if NOT EXIST "%CertName%/certs" mkdir "%CertName%/certs" 
+if NOT EXIST "%CertName%/private" mkdir "%CertName%/private"
+if NOT EXIST "%CertName%/rqsts" mkdir "%CertName%/rqsts"
 @cacls %CertName% /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
 
 
@@ -44,19 +47,19 @@ rem openssl req -new -newkey rsa:2048 -nodes -out support_lextechaudits_com.csr 
 rem "c:\Program Files (x86)\OpenSSL\bin\openssl.exe" req -new -newkey rsa:2048 -nodes -out support_lextechaudits_com.csr -keyout support_lextechaudits_com.key -subj "/C=US/ST=Pennsylvania/L=Philadelphia/O=Lexington Technology/OU=Technology Services/CN=support.lextechaudits.com"
 rem %OpenSSLExe% req -new -newkey rsa:2048 -keyout "%CertName%\%CertName%.privatekey.pem"  -days 365 -out "%CertName%\%CertName%.csr.txt" -config "%CertTempl%"
 rem %OpenSSLExe% req -new -newkey rsa:2048 -x509 -sha256 -out "%CertName%/%CertName%.csr.txt" -keyout "%CertName%/%CertName%.privatekey.pem" -config "%CertTempl%"
-%OpenSSLExe% req -newkey rsa:2048 -sha256 -out "%CertName%/%CertName%.csr.txt" -keyout "%CertName%/%CertName%.key" -config "%CertTempl%" -pkeyopt rsa_keygen_bits:2048
+%OpenSSLExe% req -newkey rsa:2048 -sha256 -out "%CertName%/rqsts/%CertName%.csr.txt" -keyout "%CertName%/private/%CertName%.key" -config "etc/CAConfigurations/ServerSSLCertificate.conf" -pkeyopt rsa_keygen_bits:2048
 
 FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) do cacls "%CertName%" /E /R %%i >nul
 
 echo.
 echo Two files have been created:
-echo		%CD%\%CertName%\%CertName%.key - Private Key
-echo		%CD%\%CertName%\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
+echo		%CD%\%CertName%\private\%CertName%.key - Private Key
+echo		%CD%\%CertName%\rqsts\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
 echo.
 echo Copy the following instructions and save them, or use the readme file at:
 echo 		%CD%\%CertName%\RequestCertificateInstructions.txt
 echo.
-echo Please attach the CSR ^( %CD%\%CertName%\%CertName%.csr.txt ^) to an email and your contact information
+echo Please attach the CSR ^( %CD%\%CertName%\rqsts\%CertName%.csr.txt ^) to an email and your contact information
 echo and send it to the Certificate Authority (CA) Administrator at:
 echo		mailto:%DefaultCAEmail%
 echo.
@@ -67,7 +70,7 @@ echo.
 echo Once the certificate request has been authorized, you will receive an email from the CA Administrator with instructions on
 echo how to obtain your certificate.
 echo.
-echo Please attach the CSR ^( %CD%\%CertName%\%CertName%.csr.txt ^) to an email and your contact information > "%CD%\%CertName%\RequestCertificateInstructions.txt"
+echo Please attach the CSR ^( %CD%\%CertName%\rqsts\%CertName%.csr.txt ^) to an email and your contact information > "%CD%\%CertName%\RequestCertificateInstructions.txt"
 echo and send it to the Certificate Authority (CA) Administrator at: >> "%CD%\%CertName%\RequestCertificateInstructions.txt"
 echo		mailto:%DefaultCAEmail% >> "%CD%\%CertName%\RequestCertificateInstructions.txt"
 echo. >> "%CD%\%CertName%\RequestCertificateInstructions.txt"
