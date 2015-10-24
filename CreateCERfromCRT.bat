@@ -16,7 +16,7 @@ if "%1" NEQ "" (
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\certs\!CertName!.crt" goto :ValidCertName
+	if exist "!CertName!\!CertName!.crt" goto :ValidCertName
 )
 
 echo Convert a 509 public certificate ^(CRT^) to DER format ^(CER^)
@@ -24,7 +24,7 @@ echo.
 set DirNames=
 set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\certs\%%i.crt" (
+	if exist "%%i\%%i.crt" (
 		set /a DirCount += 1
 		if !DirCount! GTR 1 Set DirNames=!DirNames!,
 		Set DirNames=!DirNames!%%i
@@ -34,7 +34,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if !DirCount! == 0 ( 
 	echo.
-	echo You do not have a CRT public key in your path.  You need to have a unencrypted key ^(%%name%%\certs\%%name%%.crt^)
+	echo You do not have a CRT public key in your path.  You need to have a unencrypted key ^(%%name%%\%%name%%.crt^)
 	echo in a named sub directory ^(%%name%%^).
 	echo.
 	pause
@@ -43,7 +43,7 @@ if !DirCount! == 0 (
 
 if !DirCount! == 1 (
 	set Picked_Name=!DirNames!
-	goto :ValidCAName
+	goto :ValidCertName
 ) else (
 	call :parsenames "!DirNames!" 1
 	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
@@ -61,7 +61,7 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 
 :ValidCertName
 
-if exist "%Picked_Name%\certs\%Picked_Name%.cer" (
+if exist "%Picked_Name%\%Picked_Name%.cer" (
 	set /p CertConfirm=Are you sure you want to create a new public DER key "%Picked_Name%.cer"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
 	set /p CertConfirm=Are you sure you want to create a new public DER key "%Picked_Name%.cer"^(y,n^)[y]?:
@@ -72,11 +72,12 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	pause
 	goto :eof
 )
-%OpenSSLExe% x509 -outform der -in %Picked_Name%/certs/%Picked_Name%.crt" -out "%Picked_Name%/certs/%Picked_Name%.cer" 
+
+%OpenSSLExe% x509 -outform der -in %Picked_Name%/%Picked_Name%.crt" -out "%Picked_Name%/%Picked_Name%.cer" 
 
 echo.
 echo The following file has been created:
-echo       DER (Base-64 encoded) Certificate ^>^>^> %CD%\%CertName%\certs\%CertName%.cer ^<^<^<
+echo       DER (Base-64 encoded) Certificate ^>^>^> %CD%\%CertName%\%CertName%.cer ^<^<^<
 echo.
 pause
 goto :eof

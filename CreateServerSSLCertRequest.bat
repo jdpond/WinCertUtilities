@@ -43,10 +43,6 @@ if NOT EXIST "%CertName%/rqsts" mkdir "%CertName%/rqsts"
 
 
 :NoNewDir
-rem openssl req -new -newkey rsa:2048 -nodes -out support_lextechaudits_com.csr -keyout support_lextechaudits_com.key -subj "/C=US/ST=Pennsylvania/L=Philadelphia/O=Lexington Technology/OU=Technology Services/CN=support.lextechaudits.com"
-rem "c:\Program Files (x86)\OpenSSL\bin\openssl.exe" req -new -newkey rsa:2048 -nodes -out support_lextechaudits_com.csr -keyout support_lextechaudits_com.key -subj "/C=US/ST=Pennsylvania/L=Philadelphia/O=Lexington Technology/OU=Technology Services/CN=support.lextechaudits.com"
-rem %OpenSSLExe% req -new -newkey rsa:2048 -keyout "%CertName%\%CertName%.privatekey.pem"  -days 365 -out "%CertName%\%CertName%.csr.txt" -config "%CertTempl%"
-rem %OpenSSLExe% req -new -newkey rsa:2048 -x509 -sha256 -out "%CertName%/%CertName%.csr.txt" -keyout "%CertName%/%CertName%.privatekey.pem" -config "%CertTempl%"
 %OpenSSLExe% req -newkey rsa:2048 -sha256 -out "%CertName%/rqsts/%CertName%.csr.txt" -keyout "%CertName%/private/%CertName%.key" -config "etc/CAConfigurations/ServerSSLCertificate.conf" -pkeyopt rsa_keygen_bits:2048
 
 FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) do cacls "%CertName%" /E /R %%i >nul

@@ -1,11 +1,11 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>ConvertNoPassPrivateToPassPrivate</b> command file.
+Rem <b>CreatePasswordlessKey(from509key)</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki
-Rem @description Create a private, encrypted (aes256) RSA key (pem) from a 509v3 unencrypted key
+Rem @description Extract a private, unencrypted RSA key (pem) from a full 509v3 password protected key
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
 call "etc/CertConfig.bat"
@@ -24,15 +24,15 @@ if "%1" NEQ "" (
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\private\!CertName!.nopass.key" goto :ValidCertName
+	if exist "!CertName!\private\!CertName!.key" goto :ValidCertName
 )
 
-echo Create a private, encrypted ^(aes256^) RSA key ^(pem^) from a 509v3 unencrypted key
+echo Extract a private, unencrypted RSA key (pem) from a full 509v3 password protected key
 echo.
 set DirNames=
 set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.nopass.key" (
+	if exist "%%i\private\%%i.key" (
 		set /a DirCount += 1
 		if !DirCount! GTR 1 Set DirNames=!DirNames!,
 		Set DirNames=!DirNames!%%i
@@ -42,7 +42,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 
 if !DirCount! == 0 ( 
 	echo.
-	echo You do not have and unprotected key in your path.  You need to have a unencrypted password protected key ^(%%name%%\private\%%name%%.nopass.key^)
+	echo You do not have a valid certificate set ready for conversion.  You need to have a full key set ^(%%name%%\private\%%name%%.key^)
 	echo in a named sub directory ^(%%name%%^).
 	echo.
 	pause
@@ -69,23 +69,22 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 
 :ValidCertName
 
-if exist "%Picked_Name%\private\%Picked_Name%.key" (
-	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
+if exist "%Picked_Name%\private\%Picked_Name%.nopass.key" (
+	set /p CertConfirm=Are you sure you want to create a new unencrypted private key "%Picked_Name%.nopass.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
-	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(y,n^)[y]?:
+	set /p CertConfirm=Are you sure you want to create a new unencrypted private key "%Picked_Name%.nopass.key"^(y,n^)[y]?:
 )
 if "%CertConfirm%" == "" set CertConfirm=y
 if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
-	echo You elected NOT to create key "%Picked_Name%"
+	echo You elected NOT to create key set "%Picked_Name%"
 	pause
 	goto :eof
 )
 
-%OpenSSLExe% rsa -aes256 -in "%Picked_Name%\private\%Picked_Name%.nopass.key" -out "%Picked_Name%\private\%Picked_Name%.key" 
-
+%OpenSSLExe% rsa -in "%Picked_Name%\private\%Picked_Name%.key" -out "%Picked_Name%\private\%Picked_Name%.nopass.key"
 echo.
 echo The following file has been created:
-echo       Private with password Key - ^>^>^> %CD%\%CertName%\Private\%CertName%.key ^<^<^<
+echo       Private no password RSA (x509) Key - ^>^>^> %CD%\%Picked_Name%\private\%Picked_Name%.nopass.key ^<^<^<
 echo.
 pause
 goto :eof

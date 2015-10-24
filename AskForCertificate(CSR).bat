@@ -59,11 +59,13 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 :NewDir
 
 if NOT EXIST %CertName% mkdir %CertName%
+if NOT EXIST "%CertName%/certs" mkdir "%CertName%/certs"
 if NOT EXIST "%CertName%/private" mkdir "%CertName%/private"
 if NOT EXIST "%CertName%/etc" mkdir "%CertName%/etc"
+if NOT EXIST "%CertName%/rqsts" mkdir "%CertName%/rqsts"
 copy /Y "etc\ClientConfigurations\%Picked_Name%" "%CertName%\etc\*.*" > nul
 
-%OpenSSLExe% req -new -keyout "%CertName%/private/%CertName%.key" -days 730 -out "%CertName%/%CertName%.csr.txt" -config "etc/ClientConfigurations/%Picked_Name%"
+%OpenSSLExe% req -newkey rsa:2048 -sha256 -out "%CertName%/rqsts/%CertName%.csr.txt" -keyout "%CertName%/private/%CertName%.key" -config "%CertName%/etc/%Picked_Name%" -pkeyopt rsa_keygen_bits:2048
 
 @cacls %CertName% /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
 
@@ -72,9 +74,9 @@ rem FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) d
 echo.
 echo Two files have been created:
 echo		%CD%\%CertName%\private\%CertName%.key - Private Key
-echo		%CD%\%CertName%\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
+echo		%CD%\%CertName%\rqsts%\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
 echo.
-echo Please attach the CSR ^( %CD%\%CertName%\%CertName%.csr.txt ^) to an email and send it to the Certificate Authority (CA) Administrator.
+echo Please attach the CSR ^( %CD%\%CertName%\rqsts\%CertName%.csr.txt ^) to an email and send it to the Certificate Authority (CA) Administrator.
 echo.
 echo The CA Administrator will mail back a URL where you can copy your certificate with instructions on how to create your own private/public set.
 pause
