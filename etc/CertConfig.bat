@@ -22,7 +22,7 @@ if exist "C:/bin/OpenSSL/bin/openssl.exe" (
         echo Could not find the program OpenSSL.
         echo You can install it from:  http://www.slproweb.com/products/Win32OpenSSL.html
         pause
-        set OpenSSLExe=""
+        set OpenSSLExe="openssl"
         exit -1
       )
     )
@@ -42,7 +42,8 @@ if exist "c:\Program Files (x86)\Git\bin\ssh-keygen.exe" (
 					set sshkeygenExe="C:\Program Files (x86)\OpenSSH\bin\ssh-keygen.ex"
 				) else (
 					pause
-					set sshkeygenExe=""
+					echo Could not find the program OpenSSH, assuming in path.
+					set sshkeygenExe="ssh-keygen"
 				)
 			)
 		)
