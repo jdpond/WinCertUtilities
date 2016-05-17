@@ -1,11 +1,12 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreateCERfromCRT)</b> command file.
+Rem <b>CreatePEMfromCRT)</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
 Rem @see 
-Rem @description Convert a 509 public certificate (CRT) to Base-64 encoded DER format (CER)
+Rem @description Convert a 509 public certificate (CRT) to a standard PEM certificate (PEM)
+Rem Note:  All you're doing is stripping out the CRT header information :)
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
 call "etc/CertConfig.bat"
@@ -19,7 +20,7 @@ if "%1" NEQ "" (
 	if exist "!CertName!\certs\!CertName!.crt" goto :ValidCertName
 )
 
-echo Convert a 509 public certificate ^(CRT^) to DER format ^(CER^)
+echo Convert a 509 public certificate ^(CRT^) to PEM format ^(PEM^)
 echo.
 set DirNames=
 set /a DirCount=0
@@ -61,10 +62,10 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 
 :ValidCertName
 
-if exist "%Picked_Name%\certs\%Picked_Name%.cer" (
-	set /p CertConfirm=Are you sure you want to create a new public DER key "%Picked_Name%.cer"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
+if exist "%Picked_Name%\certs\%Picked_Name%.pem" (
+	set /p CertConfirm=Are you sure you want to create a new public PEM certificate "%Picked_Name%.pem"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
-	set /p CertConfirm=Are you sure you want to create a new public DER key "%Picked_Name%.cer"^(y,n^)[y]?:
+	set /p CertConfirm=Are you sure you want to create a new public PEM key "%Picked_Name%.pem"^(y,n^)[y]?:
 )
 if "%CertConfirm%" == "" set CertConfirm=y
 if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
@@ -73,12 +74,26 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	goto :eof
 )
 
-rem %OpenSSLExe% x509 -outform der -in %Picked_Name%/%Picked_Name%.crt" -out "%Picked_Name%/%Picked_Name%.cer" 
-%OpenSSLExe% x509 -outform der -in "%Picked_Name%/certs/%Picked_Name%.crt" -out "%Picked_Name%/certs/%Picked_Name%.cer" 
-
+set /A linecount = 0
+for /F "tokens=*" %%A in (%Picked_Name%/certs/%Picked_Name%.crt) do (
+	if !linecount! == 0 (
+		if "%%A" == "-----BEGIN CERTIFICATE-----" (
+			set /a linecount += 1
+			echo %%A > "%Picked_Name%/certs/%Picked_Name%.pem"
+		)
+	) else (
+		set /a linecount += 1
+		echo %%A >> "%Picked_Name%/certs/%Picked_Name%.pem"
+	)
+)
 echo.
-echo The following file has been created:
-echo       DER (Base-64 encoded) Certificate ^>^>^> %CD%\%Picked_Name%/certs/%Picked_Name%.cer ^<^<^<
+if !linecount! == 0 (
+	echo ^!^!^!The specified file : ^>^>^> %CD%\%Picked_Name%/certs/%Picked_Name%.crt ^<^<^< had no certificate info^!^!^!
+	echo       PEM Certificate ^>^>^> %CD%\%Picked_Name%/certs/%Picked_Name%.pem ^<^<^< was not created!
+) else (
+	echo The following file has been created:
+	echo       PEM Certificate ^>^>^> %CD%\%Picked_Name%/certs/%Picked_Name%.pem ^<^<^<
+)
 echo.
 pause
 goto :eof
