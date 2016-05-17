@@ -21,16 +21,16 @@ if exist "C:/bin/OpenSSL/bin/openssl.exe" (
       ) else (
         echo Could not find the program OpenSSL.
         echo You can install it from:  http://www.slproweb.com/products/Win32OpenSSL.html
+        set OpenSSLExe="openssl"
         pause
-        set OpenSSLExe=""
-        exit -1
+rem         exit -1
       )
     )
   )
 )
 
 if exist "c:\Program Files (x86)\Git\bin\ssh-keygen.exe" (
-	set sshkeygenExe="c:\Program Files (x86)\Git\bin\ssh-keygen.exe"
+		set sshkeygenExe="c:\Program Files (x86)\Git\bin\ssh-keygen.exe"
 	) else (
 		if exist "c:\Program Files (x86)\MinGW\msys\1.0\bin\ssh-keygen.exe" (
 			set sshkeygenExe="c:\Program Files (x86)\MinGW\msys\1.0\bin\ssh-keygen.exe"
@@ -38,18 +38,22 @@ if exist "c:\Program Files (x86)\Git\bin\ssh-keygen.exe" (
 			if exist "c:\Program Files (x86)\Git\bin\ssh-keygen.exe" (
 				set sshkeygenExe="c:\Program Files (x86)\MinGW\msys\1.0\bin\ssh-keygen.exe"
 			) else (
-				if exist "C:\Program Files (x86)\OpenSSH\bin\ssh-keygen.exe" (
+				if exist "C:\Program Files (x86)\OpenSSH\bin\ssh-keygen.ex" (
 					set sshkeygenExe="C:\Program Files (x86)\OpenSSH\bin\ssh-keygen.exe"
 				) else (
-					if exist "C:\Program Files\Git\usr\bin" (
-						set sshkeygenExe="C:\Program Files\Git\usr\bin"
+					if exist "c:\Program Files (x86)\Git\bin\ssh-keygen.exe" (
+						set sshkeygenExe="c:\Program Files (x86)\MinGW\msys\1.0\bin\ssh-keygen.exe"
 					) else (
-						echo Could Not find the program ssh-keygen
-						pause
-						set sshkeygenExe=""
+						if exist "C:\Program Files\Git\usr\bin\ssh-keygen.exe" (
+							set sshkeygenExe="C:\Program Files\Git\usr\bin\ssh-keygen.ex"
+						) else (
+							echo Could not find the program ssh-keygen, assuming in path.
+							set sshkeygenExe="ssh-keygen"
+							pause
+rem					exit -1
+						)
 					)
 				)
 			)
 		)
 	)
-)
