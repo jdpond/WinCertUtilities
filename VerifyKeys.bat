@@ -83,7 +83,7 @@ if exist "%Picked_Name%\%Picked_Name%.chain.crt" (
 	set IncludeChain=-CAfile ^"%Picked_Name%\%Picked_Name%.chain.crt" -chain
 )
 
-%OpenSSLExe% verify -CAfile "%Picked_Name%\%Picked_Name%.chain.crt" "%CertName%\%Picked_Name%.crt" 
+%OpenSSLExe% verify -CAfile "%Picked_Name%\%Picked_Name%.chain.pem" "%Picked_Name%\%Picked_Name%.crt" 
 
 echo Verification complete.
 set IncludeChain=
@@ -97,6 +97,39 @@ pause
 echo x509 public certificate information:
 %OpenSSLExe% x509 -text -in "%Picked_Name%\%Picked_Name%.crt" -noout
 pause
+
+goto :eof
+
+:parsenames
+set list=%1
+set list=%list:"=%
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if not "%%a" == "" echo %2^) %%~na
+	if not "%%b" == "" (
+		set /a NextNum=%2+1
+		call :parsenames "%%b" !NextNum!
+	)
+)
+exit /b
+:printname
+echo %2^) %~s1
+exit /b
+
+:picklist
+set list=%1
+set list=%list:"=%
+set NextNum=%3
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if !NextNum! == %2 (
+		Set Picked_Name=%%a
+		exit /b 
+	)
+	if not "%%b" == "" (
+		set /a NextNum += 1
+		call :picklist "%%b" %2 !NextNum! 
+	)
+)
+exit /b
 
 rem echo rsa Information:
 rem %OpenSSLExe% rsa -text -in "%Picked_Name%\%Picked_Name%.key" -noout
