@@ -79,17 +79,17 @@ rem pause
 :noerror
 
 set IncludeChain=
-if exist "%Picked_Name%\%Picked_Name%.chain.crt" (
-	set IncludeChain=-CAfile ^"%Picked_Name%\%Picked_Name%.chain.crt" -chain
+if exist "%Picked_Name%\%Picked_Name%.chain.pem" (
+	set IncludeChain=-CAfile ^"%Picked_Name%\%Picked_Name%.chain.pem" -chain
 )
 
 %OpenSSLExe% verify -CAfile "%Picked_Name%\%Picked_Name%.chain.pem" "%Picked_Name%\%Picked_Name%.crt" 
 
 echo Verification complete.
 set IncludeChain=
-if not exist "%Picked_Name%\%Picked_Name%.chain.crt" (
+if not exist "%Picked_Name%\%Picked_Name%.chain.pem" (
 	echo If your verification failed, it may be because you did not download or specify the certificate validation chain.
-	echo The chain file was unavailable: "%CD\%Picked_Name%\%Picked_Name%.chain.crt"
+	echo The chain file was unavailable: "%CD\%Picked_Name%\%Picked_Name%.chain.pem"
 )
 
 pause

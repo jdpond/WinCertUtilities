@@ -29,7 +29,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 if !DirCount! == 0 ( 
 	echo.
 	echo You have no Certificate Revocation Lists^(CRLs^)
-	echo To set up a CA, you may want to use the CA INfrastruction Creation Tool^(CreateCAInfrastructure^).
+	echo To set up a CA, you may want to use the CA Infrastruction Creation Tool^(CreateCAInfrastructure^).
 	echo If you have a CA set up, you may need to copy your CSR into the appropriate "crl" directory.
 	echo.
 	pause
