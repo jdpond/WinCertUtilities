@@ -80,10 +80,10 @@ rem pause
 
 set IncludeChain=
 if exist "%Picked_Name%\%Picked_Name%.chain.pem" (
-	set IncludeChain=-CAfile ^"%Picked_Name%\%Picked_Name%.chain.pem" -chain
+	set IncludeChain=-CAfile ^"%Picked_Name%\%Picked_Name%.chain.pem^" -chain
 )
 
-%OpenSSLExe% verify -CAfile "%Picked_Name%\%Picked_Name%.chain.pem" "%Picked_Name%\%Picked_Name%.crt" 
+%OpenSSLExe% verify -verbose -CAfile "%Picked_Name%\%Picked_Name%.chain.pem" "%Picked_Name%\%Picked_Name%.crt" 
 
 echo Verification complete.
 set IncludeChain=
