@@ -1,7 +1,7 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreateIndividualCertificateRequest</b> command file.
+Rem <b>AskForCertificate(CSR).bat</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.2 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki and http://pki-tutorial.readthedocs.org/en/latest/index.html#
@@ -12,17 +12,11 @@ call "etc/CertConfig.bat"
 :EnterCertName
 echo What Certificate Name do you wish to use [please make it short and descriptive such as a username, ex: "yourname(useage)"]
 set /p CertName=Certificate Name? 
-if defined CertName goto :CertNameEntered
+if defined CertName goto :SelectCertType
 echo Invalid Response, you must enter a valid name.
 pause
 goto :eof
 
-:CertNameEntered
-if NOT EXIST %CertName% goto :SelectCertType
-set /p FExists=That directory already exists, you might overwrite existing keys.  Are you absolutely sure^(Y/N^)?[N]: 
-if not defined FExists goto :EnterCertName
-if %FExists% == Y goto :SelectCertType
-goto :EnterCertName
 
 :SelectCertType
 FOR /F "usebackq delims=" %%i in (`dir /B "etc\ClientConfigurations\*.conf"`) do (
@@ -65,20 +59,58 @@ if NOT EXIST "%CertName%/etc" mkdir "%CertName%/etc"
 if NOT EXIST "%CertName%/rqsts" mkdir "%CertName%/rqsts"
 copy /Y "etc\ClientConfigurations\%Picked_Name%" "%CertName%\etc\*.*" > nul
 
-%OpenSSLExe% req -newkey rsa:2048 -sha256 -out "%CertName%/rqsts/%CertName%.csr.txt" -keyout "%CertName%/private/%CertName%.key" -config "%CertName%/etc/%Picked_Name%" -pkeyopt rsa_keygen_bits:2048
+set CertNameDir=%CertName%
+set /a fcount=0
+FOR /F "usebackq delims=" %%i in (`dir /B/A:-D "%CertNameDir%\rqsts\%CertName%*" `) do (
+	set /a fcount += 1
+	if NOT EXIST "%CertNameDir%\rqsts\%CertName%^(!fcount!^).csr.txt" (
+		Set CertName=%CertName%^(!fcount!^)
+		goto CreateCSR
+	)
+)
 
-@cacls %CertName% /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
+:CreateCSR
+
+if "!Picked_Name!" == "RequestServerSSLCertificate.conf" (
+	set /p SANValues=Comma delimited Subject Alternative Names^(SAN^) for X509 V3 certifications? ^(e.g. DNS:yourserver.yourdomain.com, DNS:*.yourdomain.com^):  
+	if not defined SANValues goto :eof
+)
+
+%OpenSSLExe% req -newkey rsa:4096 -sha512 -out "%CertNameDir%/rqsts/%CertName%.csr.txt" -keyout "%CertNameDir%/private/%CertName%.key" -config "%CertNameDir%/etc/%Picked_Name%" -pkeyopt rsa_keygen_bits:4096
+
+@cacls %CertNameDir% /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
 
 rem FOR /F "usebackq skip=2 tokens=2* delims=\:" %%i in (`cacls "%CertName%"`) do cacls "%CertName%" /E /R %%i >nul
 
 echo.
 echo Two files have been created:
-echo		%CD%\%CertName%\private\%CertName%.key - Private Key
-echo		%CD%\%CertName%\rqsts%\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
+echo		%CD%\%CertNameDir%\private\%CertName%.key - Private Key
+echo		%CD%\%CertNameDir%\rqsts\%CertName%.csr.txt - Certificate Signing Request ^(CSR^)
 echo.
-echo Please attach the CSR ^( %CD%\%CertName%\rqsts\%CertName%.csr.txt ^) to an email and send it to the Certificate Authority (CA) Administrator.
+echo Copy the following instructions and save them, or use the readme file at:
+echo 		%CD%\%CertNameDir%\RequestCertificateInstructions.txt
 echo.
-echo The CA Administrator will mail back a URL where you can copy your certificate with instructions on how to create your own private/public set.
+echo Please attach the CSR ^( %CD%\%CertNameDir%\rqsts\%CertName%.csr.txt ^) to an email and your contact information
+echo and send it to the Certificate Authority (CA) Administrator at:
+echo		mailto:%DefaultCAEmail%
+echo.
+echo The CA Administrator will contact you and verify information - as well as give you a user ID and password where you can
+echo complete the registration process and get your certificate in keeping with the Certificate Policy instructions and
+echo level of assurance requirements.
+echo.
+echo Once the certificate request has been authorized, you will receive an email from the CA Administrator with instructions on
+echo how to obtain your certificate.
+echo.
+echo Please attach the CSR ^( %CD%\%CertNameDir%\rqsts\%CertName%.csr.txt ^) to an email and your contact information > "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo and send it to the Certificate Authority (CA) Administrator at: >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo		mailto:%DefaultCAEmail% >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo. >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo The CA Administrator will contact you and verify information - as well as give you a user ID and password where you can >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo complete the registration process and get your certificate in keeping with the Certificate Policy instructions and >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo level of assurance requirements. >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo. >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo Once the certificate request has been authorized, you will receive an email from the CA Administrator with instructions on >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
+echo how to obtain your certificate. >> "%CD%\%CertNameDir%\RequestCertificateInstructions.txt"
 pause
 
 goto :eof

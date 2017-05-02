@@ -30,12 +30,19 @@ if "%1" NEQ "" (
 echo Extract a private, unencrypted RSA key (pem) from a full 509v3 password protected key
 echo.
 set DirNames=
+set FNames=
 set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\private\%%i.key" (
-		set /a DirCount += 1
-		if !DirCount! GTR 1 Set DirNames=!DirNames!,
-		Set DirNames=!DirNames!%%i
+	if exist "%%i\private\*.key" (
+		FOR /F "usebackq delims=" %%j in (`dir /B/A "%%i\private\*.key"`) do (
+			set str1=%%j
+			if "!str1:nopass=!"=="!str1!" (
+				set /a DirCount += 1
+				if !DirCount! GTR 1 Set DirNames=!DirNames!,
+				if !DirCount! GTR 1 Set FNames=!FNames!,
+				Set DirNames=!DirNames!%%i
+				Set FNames=!FNames!%%j
+			)
 		)
 	)
 )
@@ -53,13 +60,16 @@ if !DirCount! == 1 (
 	set Picked_Name=!DirNames!
 	goto :ValidCAName
 ) else (
-	call :parsenames "!DirNames!" 1
+	call :parsenames "!FNames!" 1
 	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
 	if "!CertID!" == "q" goto :eof
 )
 
 if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 	call :picklist "!DirNames!" !CertID! 1
+	set Picked_Dir=!Picked_Name!
+	call :picklist "!FNames!" !CertID! 1
+	set Picked_Name=!Picked_Name:~0,-4!
 ) else (
 	echo.
 	echo Invalid Selection, must be 1-!DirCount!
@@ -69,7 +79,7 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 
 :ValidCertName
 
-if exist "%Picked_Name%\private\%Picked_Name%.nopass.key" (
+if exist "%Picked_Dir%\private\%Picked_Name%.nopass.key" (
 	set /p CertConfirm=Are you sure you want to create a new unencrypted private key "%Picked_Name%.nopass.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
 	set /p CertConfirm=Are you sure you want to create a new unencrypted private key "%Picked_Name%.nopass.key"^(y,n^)[y]?:
@@ -81,10 +91,10 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	goto :eof
 )
 
-%OpenSSLExe% rsa -in "%Picked_Name%\private\%Picked_Name%.key" -out "%Picked_Name%\private\%Picked_Name%.nopass.key"
+%OpenSSLExe% rsa -in "%Picked_Dir%\private\%Picked_Name%.key" -out "%Picked_Dir%\private\%Picked_Name%.nopass.key"
 echo.
 echo The following file has been created:
-echo       Private no password RSA (x509) Key - ^>^>^> %CD%\%Picked_Name%\private\%Picked_Name%.nopass.key ^<^<^<
+echo       Private no password RSA (x509) Key - ^>^>^> %CD%\%Picked_Dir%\private\%Picked_Name%.nopass.key ^<^<^<
 echo.
 pause
 goto :eof
