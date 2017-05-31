@@ -1,11 +1,11 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CARevokeCRT</b> command file.
+Rem <b>ShowCRLDetails</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.2 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki and http://pki-tutorial.readthedocs.org/en/latest/index.html#
-Rem @description Revoke an x.509 (.crl) certificate .
+Rem @description Show the Details of the Certificate Revocation List (CRL).
 Rem @param CA_SIGN_NAME - Name of the certificate corresponding to directory and CA_SIGN_NAMEs
 
 call "etc/CertConfig.bat"
