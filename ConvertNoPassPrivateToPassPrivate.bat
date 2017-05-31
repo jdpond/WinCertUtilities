@@ -8,6 +8,7 @@ Rem @see https://github.com/jdpond/WinCertUtilities/wiki
 Rem @description Create a private, encrypted (aes256) RSA key (pem) from a 509v3 unencrypted key
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
+
 call "etc/CertConfig.bat"
 
 if exist %OpenSSLExe% goto :PickCertName
@@ -27,22 +28,29 @@ if "%1" NEQ "" (
 	if exist "!CertName!\private\!CertName!.nopass.key" goto :ValidCertName
 )
 
-echo Create a private, encrypted ^(aes256^) RSA key ^(pem^) from a 509v3 unencrypted key
+echo Create a private, full 509v3 password protected key from an unencrypted RSA key (pem) 
 echo.
 set DirNames=
+set FNames=
 set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\private\%%i.nopass.key" (
-		set /a DirCount += 1
-		if !DirCount! GTR 1 Set DirNames=!DirNames!,
-		Set DirNames=!DirNames!%%i
+	if exist "%%i\private\*.nopass.key" (
+		FOR /F "usebackq delims=" %%j in (`dir /B/A "%%i\private\*.nopass.key"`) do (
+			set str1=%%j
+			if not "!str1:nopass=!"=="!str1!" (
+				set /a DirCount += 1
+				if !DirCount! GTR 1 Set DirNames=!DirNames!,
+				if !DirCount! GTR 1 Set FNames=!FNames!,
+				Set DirNames=!DirNames!%%i
+				Set FNames=!FNames!%%j
+			)
 		)
 	)
 )
 
 if !DirCount! == 0 ( 
 	echo.
-	echo You do not have and unprotected key in your path.  You need to have a unencrypted password protected key ^(%%name%%\private\%%name%%.nopass.key^)
+	echo You do not have an unprotected key in your path.  You need to have a unencrypted password protected key ^(%%name%%\private\%%name%%.nopass.key^)
 	echo in a named sub directory ^(%%name%%^).
 	echo.
 	pause
@@ -53,13 +61,16 @@ if !DirCount! == 1 (
 	set Picked_Name=!DirNames!
 	goto :ValidCertName
 ) else (
-	call :parsenames "!DirNames!" 1
+	call :parsenames "!FNames!" 1
 	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
 	if "!CertID!" == "q" goto :eof
 )
 
 if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 	call :picklist "!DirNames!" !CertID! 1
+	set Picked_Dir=!Picked_Name!
+	call :picklist "!FNames!" !CertID! 1
+	set Picked_Name=!Picked_Name:~0,-11!
 ) else (
 	echo.
 	echo Invalid Selection, must be 1-!DirCount!
@@ -69,7 +80,7 @@ if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
 
 :ValidCertName
 
-if exist "%Picked_Name%\private\%Picked_Name%.key" (
+if exist "%Picked_Dir%\private\%Picked_Name%.key" (
 	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(KEY ALREADY EXISTS^)^(y,n^)[y]?:
 ) else (
 	set /p CertConfirm=Are you sure you want to create a new encrypted private key "%Picked_Name%.key"^(y,n^)[y]?:
@@ -81,11 +92,11 @@ if not "%CertConfirm%" == "y" if not "%CertConfirm%" == "Y" (
 	goto :eof
 )
 
-%OpenSSLExe% rsa -aes256 -in "%Picked_Name%\private\%Picked_Name%.nopass.key" -out "%Picked_Name%\private\%Picked_Name%.key" 
+%OpenSSLExe% rsa -aes256 -in "%Picked_Dir%\private\%Picked_Name%.nopass.key" -out "%Picked_Dir%\private\%Picked_Name%.key" 
 
 echo.
 echo The following file has been created:
-echo       Private with password Key - ^>^>^> %CD%\%CertName%\Private\%CertName%.key ^<^<^<
+echo       Private with password Key - ^>^>^> %CD%\%Picked_Dir%\Private\%Picked_Name%.key ^<^<^<
 echo.
 pause
 goto :eof

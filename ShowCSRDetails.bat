@@ -58,7 +58,7 @@ if !DirCount! == 0 (
 
 if !DirCount! == 1 (
 	set Picked_Name=!DirNames!
-	goto :ValidCAName
+	goto :ValidCertName
 ) else (
 	call :parsenames "!FNames!" 1
 	set /p CertID=Which key would you like to display details for(by number^)[or q to quit]?: 

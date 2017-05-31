@@ -1,11 +1,11 @@
 @echo off
 setLocal EnableDelayedExpansion
 Rem 
-Rem <b>CreatePasswordlessKey(from509key)</b> command file.
+Rem <b>ConvertPassPrivateToNoPassPrivate</b> command file.
 Rem @author Jack D. Pond
 Rem @version 0.1 / Windows Batch Processor
 Rem @see https://github.com/jdpond/WinCertUtilities/wiki
-Rem @description Extract a private, unencrypted RSA key (pem) from a full 509v3 password protected key
+Rem @description Extract a private, non password from a full 509v3 password protected key
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
 call "etc/CertConfig.bat"
@@ -58,7 +58,7 @@ if !DirCount! == 0 (
 
 if !DirCount! == 1 (
 	set Picked_Name=!DirNames!
-	goto :ValidCAName
+	goto :ValidCertName
 ) else (
 	call :parsenames "!FNames!" 1
 	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
