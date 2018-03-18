@@ -45,7 +45,7 @@ FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
 if !DirCount! == 0 ( 
 	echo.
 	echo You do not have a valid certificate set ready for conversion.  You need to have a full key set ^(%%name%%\private\%%name%%.key^)
-	echo in a named sub directory ^(%%name%%^).
+	echo in a named sub directory ^(%%private%%^).
 	echo.
 	pause
 	goto :eof

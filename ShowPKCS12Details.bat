@@ -9,74 +9,65 @@ Rem @description Output PKCS12 (PFX) Information
 Rem @param CertName - Name of the certificate corresponding to directory and certnames
 
 call "etc/CertConfig.bat"
-
 :PickCertName
 if "%1" NEQ "" (
 	set CertName=%1
 	set TestVar=!CertName:~0,1!
 	set TestVar2="
 	if !TestVar!==!TestVar2! set CertName=!CertName:~1,-1!
-	if exist "!CertName!\!CertName!.pfx" goto :ValidCertName
+	if exist "!CertName!\certs\!CertName!.crt" goto :ValidCertName
 )
 
-
+echo View details on a der encrypted certificate
+echo.
+set DirNames=
+set FNames=
+set /a DirCount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/AD`) do (
-	if exist "%%i\%%i.pfx" (
-		set /a DirCount += 1
-		set v!DirCount!=%%i
-		echo !DirCount!^) %%~ni
-		if !DirCount! GTR 20 (
-			echo.
-			echo This utility can only handle up to 20 PKCS12 keys.  You will only be able to select up to the first 20 keys.
-			echo.
-			pause
+	if exist "%%i\private\*.pfx" (
+		FOR /F "usebackq delims=" %%j in (`dir /B/A "%%i\private\*.pfx"`) do (
+			set /a DirCount += 1
+			if !DirCount! GTR 1 Set DirNames=!DirNames!,
+			if !DirCount! GTR 1 Set FNames=!FNames!,
+			Set DirNames=!DirNames!%%i
+			Set FNames=!FNames!%%j
 		)
 	)
 )
 
-
-if not defined DirCount ( 
+if !DirCount! == 0 ( 
 	echo.
 	echo You do not have any valid PKCS12 keys that I can find
+	echo in a named sub directory ^(%%private%%^).
 	echo.
 	pause
 	goto :eof
 )
 
-if %DirCount% == 1 (
-	set CertID=1
+if !DirCount! == 1 (
+	set Picked_Name=!FNames!
+	set Picked_Dir=!DirNames!
+	goto :ValidCertName
 ) else (
-	set /p CertID=Which PKCS12 key would you like to see ^(by number^)?: 
+	call :parsenames "!FNames!" 1
+	set /p CertID=Which key would you like to convert(by number^)[or q to quit]?: 
+	if "!CertID!" == "q" goto :eof
 )
 
-if %CertID% GTR 0 if %CertID% LEQ !DirCount! if %CertID% LEQ 20 (
-	if !CertID! == 1 set CertName=!V1!
-	if !CertID! == 2 set CertName=!V2!
-	if !CertID! == 3 set CertName=!V3!
-	if !CertID! == 4 set CertName=!V4!
-	if !CertID! == 5 set CertName=!V5!
-	if !CertID! == 6 set CertName=!V6!
-	if !CertID! == 7 set CertName=!V7!
-	if !CertID! == 8 set CertName=!V8!
-	if !CertID! == 9 set CertName=!V9!
-	if !CertID! == 10 set CertName=!V10!
-	if !CertID! == 11 set CertName=!V11!
-	if !CertID! == 12 set CertName=!V12!
-	if !CertID! == 13 set CertName=!V13!
-	if !CertID! == 14 set CertName=!V14!
-	if !CertID! == 15 set CertName=!V15!
-	if !CertID! == 16 set CertName=!V16!
-	if !CertID! == 17 set CertName=!V17!
-	if !CertID! == 18 set CertName=!V18!
-	if !CertID! == 19 set CertName=!V19!
-	if !CertID! == 20 set CertName=!V20!
+if !CertID! GTR 0 if !CertID! LEQ !DirCount! (
+	call :picklist "!DirNames!" !CertID! 1
+	set Picked_Dir=!Picked_Name!
+	call :picklist "!FNames!" !CertID! 1
+rem 	set Picked_Name=!Picked_Name:~0,-4!
 ) else (
-	echo Invalid Selection, must be 1-!%DirCount%! and Less than or equal to 20
+	echo.
+	echo Invalid Selection, must be 1-!DirCount!
 	echo.
 	goto :PickCertName
 )
 
 :ValidCertName
+
 
 set IncludeChain=
 rem if exist "%CertName%\%CertName%.chain.crt" (
@@ -84,9 +75,42 @@ rem 	set IncludeChain=-CAfile ^"%CertName%\%CertName%.chain.crt" -chain
 rem )
 
 
-echo %OpenSSLExe% pkcs12 %IncludeChain% -in "%CertName%\%CertName%.pfx" -info -noout
+echo %OpenSSLExe% pkcs12 %IncludeChain% -in "%Picked_Dir%/private/%Picked_Name%" -nokeys 
 echo on
-%OpenSSLExe% pkcs12 %IncludeChain% -in "%CertName%\%CertName%.pfx" -info -noout
+%OpenSSLExe% pkcs12 %IncludeChain% -in "%Picked_Dir%/private/%Picked_Name%" -info -nokeys
 echo off 
 
 pause
+goto :eof
+
+:parsenames
+set list=%1
+set list=%list:"=%
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if not "%%a" == "" echo %2^) %%a
+	if not "%%b" == "" (
+		set /a NextNum=%2+1
+		call :parsenames "%%b" !NextNum!
+	)
+)
+exit /b
+
+:printname
+echo %2^) %1
+exit /b
+
+:picklist
+set list=%1
+set list=%list:"=%
+set NextNum=%3
+FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
+	if !NextNum! == %2 (
+		Set Picked_Name=%%a
+		exit /b 
+	)
+	if not "%%b" == "" (
+		set /a NextNum += 1
+		call :picklist "%%b" %2 !NextNum! 
+	)
+)
+exit /b

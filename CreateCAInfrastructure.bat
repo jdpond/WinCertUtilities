@@ -88,7 +88,7 @@ call :MakeOtherCAs emailca %CertName% %RADays%
 call :MakeOtherCAs developerca %CertName% %RADays% 
 
 pause
-goto :eof
+exit /b
 
 echo.
 echo Three files have been created:
@@ -128,7 +128,7 @@ if %1 == %CA_BUILD% (
 ) else (
 	if %1 == ALL call :SCheckIfExists %1 %2
 )
-goto :eof
+exit /b
 
 :SCheckIfExists
 if NOT EXIST %1_%2 goto :eof
@@ -145,7 +145,7 @@ if %1 == %CA_BUILD% (
 ) else (
 	if %CA_BUILD% == ALL call :SNewDir %1 %2
 )
-goto :eof
+exit /b
 
 :SNewDir
 set _caname=%1
@@ -161,8 +161,8 @@ if NOT EXIST "%1_%2/etc/ClientConfigurations" mkdir "%1_%2/etc/ClientConfigurati
 if NOT EXIST "%1_%2/etc/CAConfigurations" mkdir "%1_%2/etc/CAConfigurations"
 if NOT EXIST "%1_%2/rqsts" mkdir "%1_%2/rqsts"
 if NOT EXIST "%1_%2/pending_rqsts" mkdir "%1_%2/pending_rqsts"
-rem copy /Y "etc\%1.conf" "%1_%2\etc\CAConfigurations\*.*" > nul
-type NUL > "%1_%2\etc\CAConfigurations\%1.conf"
+copy /Y "etc\CAConfigurations\%1.conf" "%1_%2\etc\CAConfigurations" > nul
+type NUL > "%1_%2\etc\CAConfigurations\openssl.conf"
 for /f "usebackq tokens=* delims=" %%f in (etc\CAConfigurations\%1.conf) do call :parseit %%f
 
 type NUL > "%1_%2/db/%1_%2.db"
@@ -170,7 +170,7 @@ type NUL > "%1_%2/db/%1_%2.db.attr"
 @echo 01 > "%1_%2/db/%1_%2.crt.srl"
 @echo 01 > "%1_%2/db/%1_%2.crl.srl"
 @cacls %1_%2 /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
-goto :eof
+exit /b
 
 :MakeRoot
 
@@ -179,7 +179,7 @@ if %1 == %CA_BUILD% (
 ) else (
 	if %CA_BUILD% == ALL call :SMakeRoot %1 %2 %3
 )
-goto :eof
+exit /b
 
 :SMakeRoot
 echo #################################################################################
@@ -189,14 +189,15 @@ echo ###
 echo #################################################################################
 set CA_NAME=%1_%2
 Rem Create the key and request
-%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
+Rem set OPENSSL_CONF="%1_%2/etc/CAConfigurations/%1.conf" 
+"%OpenSSLExe%" req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
 REM Self-sign the request 
-%OpenSSLExe% ca -selfsign -config "%1_%2/etc/CAConfigurations/%1.conf" -name %1 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt" -extensions %1_ext -enddate 310101000000Z
+"%OpenSSLExe%" ca -selfsign -config "%1_%2/etc/CAConfigurations/%1.conf" -name %1 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/certs/%1_%2.crt" -extensions %1_ext -enddate 310101000000Z
 REM Generate the empty CRL
-%OpenSSLExe% ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
-%OpenSSLExe% x509 -outform der -in "%1_%2\%1_%2.crt" -out "%1_%2\%1_%2.cer" 
-%OpenSSLExe% crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl"
-goto :eof
+"%OpenSSLExe%" ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
+"%OpenSSLExe%" x509 -outform der -in "%1_%2/certs/%1_%2.crt" -out "%1_%2/certs/%1_%2.cer" 
+"%OpenSSLExe%" crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl" 
+exit /b
 
 :MakeOtherCAs
 if %1 == %CA_BUILD% (
@@ -204,7 +205,7 @@ if %1 == %CA_BUILD% (
 ) else (
 	if %CA_BUILD% == ALL call :SMakeOtherCAs %1 %2 %3
 )
-goto :eof
+exit /b
 
 :SMakeOtherCAs
 
@@ -215,17 +216,17 @@ echo ###       You are creating a %1 authority named %1_%2
 echo ###
 echo #################################################################################
 Rem Create the key and request
-%OpenSSLExe% req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
+"%OpenSSLExe%" req -new -days %3 -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/private/%1_%2.csr" -keyout "%1_%2/private/%1_%2.key" 
 REM sign the request
 set CA_NAME=rootca_%2
-%OpenSSLExe% ca -config "rootca_%2/etc/CAConfigurations/rootca.conf" -name signingca -extensions signingca_ext -days %3 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/%1_%2.crt"
+"%OpenSSLExe%" ca -config "rootca_%2/etc/CAConfigurations/rootca.conf" -name signingca -extensions signingca_ext -days %3 -in "%1_%2/private/%1_%2.csr" -out "%1_%2/certs/%1_%2.crt"
 REM Generate the empty and DER versions of both (required for publication according to RFC 2585, http://tools.ietf.org/html/rfc2585.html#section-4.2
 set CA_NAME=%1_%2
-%OpenSSLExe% ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
-copy /b /Y %1_%2\%1_%2.crt+rootca_%2\rootca_%2.crt %1_%2\%1_%2.chain.pem >nul
-%OpenSSLExe% x509 -outform der -in "%1_%2\%1_%2.crt" -out "%1_%2\%1_%2.cer" 
-%OpenSSLExe% crl -outform der -in "%1_%2\crl\%1_%2.crl" -out "%1_%2\crl\%1_%2.crl"
-goto :eof
+"%OpenSSLExe%" ca -gencrl -config "%1_%2/etc/CAConfigurations/%1.conf" -out "%1_%2/crl/%1_%2.crl"
+copy /b /Y "%1_%2\certs\%1_%2.crt"+"rootca_%2\rootca_%2.crt" "%1_%2\certs\%1_%2.chain.pem" >nul
+"%OpenSSLExe%" x509 -outform der -in "%1_%2/certs/%1_%2.crt" -out "%1_%2/certs/%1_%2.cer" 
+"%OpenSSLExe%" crl -outform der -in "%1_%2/crl/%1_%2.crl" -out "%1_%2/crl/%1_%2.crl"
+exit /b
 
 FOR /F "usebackq tokens=* delims=" %%a in (`"findstr /n ^^ \etc\CAConfigurations\!_caname!.conf"`) do (
 )
@@ -245,4 +246,4 @@ if "!_line:~0,7!" == "CRL_URL" (
 		)
 	)
 )
-goto :eof
+exit /b

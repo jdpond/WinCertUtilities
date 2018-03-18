@@ -112,7 +112,8 @@ Rem Actually performs signature here
 Rem 
 echo Certificate Authority !CA_SIGN_NAME! Certificate: !CertName! Conf: !Picked_Name!
 set CA_NAME=!CA_SIGN_NAME!
-%OpenSSLExe% ca -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!" -in "!CA_SIGN_NAME!/pending_rqsts/!CertName!.csr" -out "!CA_SIGN_NAME!/certs/!CertName!.crt"
+
+"%OpenSSLExe%" ca -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!" -in "!CA_SIGN_NAME!/pending_rqsts/!CertName!.csr" -out "!CA_SIGN_NAME!/certs/!CertName!.crt"
 rem Then move from pending_rqsts to rqsts
 move "!CA_SIGN_NAME!\pending_rqsts\!CertName!.csr" "!CA_SIGN_NAME!\rqsts\!CertName!.csr"
 pause

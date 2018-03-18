@@ -17,7 +17,6 @@ echo Invalid Response, you must enter a valid name.
 pause
 goto :eof
 
-
 :SelectCertType
 FOR /F "usebackq delims=" %%i in (`dir /B "etc\ClientConfigurations\*.conf"`) do (
 	set /a DirCount += 1
@@ -59,13 +58,14 @@ if NOT EXIST "%CertName%/etc" mkdir "%CertName%/etc"
 if NOT EXIST "%CertName%/rqsts" mkdir "%CertName%/rqsts"
 copy /Y "etc\ClientConfigurations\%Picked_Name%" "%CertName%\etc\*.*" > nul
 
+
 set CertNameDir=%CertName%
 set /a fcount=0
 FOR /F "usebackq delims=" %%i in (`dir /B/A:-D "%CertNameDir%\rqsts\%CertName%*" `) do (
 	set /a fcount += 1
 	if NOT EXIST "%CertNameDir%\rqsts\%CertName%^(!fcount!^).csr.txt" (
 		Set CertName=%CertName%^(!fcount!^)
-		goto CreateCSR
+		goto :CreateCSR
 	)
 )
 
@@ -76,7 +76,7 @@ if "!Picked_Name!" == "RequestServerSSLCertificate.conf" (
 	if not defined SANValues goto :eof
 )
 
-%OpenSSLExe% req -newkey rsa:4096 -sha512 -out "%CertNameDir%/rqsts/%CertName%.csr.txt" -keyout "%CertNameDir%/private/%CertName%.key" -config "%CertNameDir%/etc/%Picked_Name%" -pkeyopt rsa_keygen_bits:4096
+"%OpenSSLExe%" req -newkey rsa:4096 -sha512 -out "%CertNameDir%/rqsts/%CertName%.csr.txt" -keyout "%CertNameDir%/private/%CertName%.key" -config "%CertNameDir%/etc/%Picked_Name%" -pkeyopt rsa_keygen_bits:4096
 
 @cacls %CertNameDir% /T /G "%USERDOMAIN%\%USERNAME%":F > nul < yes.txt
 
@@ -119,7 +119,7 @@ goto :eof
 set list=%1
 set list=%list:"=%
 FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
-	if not "%%a" == "" echo %2^) %%~na
+	if not "%%a" == "" echo %2^) %%a
 	if not "%%b" == "" (
 		set /a NextNum=%2+1
 		call :parsenames "%%b" !NextNum!
@@ -128,7 +128,7 @@ FOR /f "tokens=1* delims=," %%a IN ("%list%") DO (
 exit /b
 
 :printname
-echo %2^) %~s1
+echo %2^) %1
 exit /b
 
 :picklist

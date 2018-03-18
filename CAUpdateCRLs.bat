@@ -101,9 +101,9 @@ Rem
 Rem Actually performs CRL update here
 Rem 
 set CA_NAME=!CA_SIGN_NAME!
-%OpenSSLExe% ca -gencrl -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!"  -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem"
+"%OpenSSLExe%" ca -gencrl -config "!CA_SIGN_NAME!/etc/CAConfigurations/!Picked_Name!"  -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem"
 if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
-%OpenSSLExe% crl -inform PEM -in "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem" -outform DER -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.crl"
+"%OpenSSLExe%" crl -inform PEM -in "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.pem" -outform DER -out "!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.crl"
 if !errorlevel! NEQ 0 echo ERRORLEVEL: !errorlevel!
 echo		^<^<^< %cd%/!CA_SIGN_NAME!/crl/!CA_SIGN_NAME!.crl ^>^>^> - Updated CRL for Certificate Authority !CA_SIGN_NAME!
 echo.

@@ -35,7 +35,8 @@ if not defined DirCount (
 	goto :eof
 )
 if !DirCount! == 1 (
-	set Picked_Name=!DirNames!
+	set Picked_Name=!FNames!
+	set Picked_Dir=!DirNames!
 	goto :ValidCAName
 ) else (
 	call :parsenames "!DirNames!" 1

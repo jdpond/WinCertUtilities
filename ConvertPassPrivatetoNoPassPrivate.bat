@@ -57,7 +57,8 @@ if !DirCount! == 0 (
 )
 
 if !DirCount! == 1 (
-	set Picked_Name=!DirNames!
+	set Picked_Name=!FNames!
+	set Picked_Dir=!DirNames!
 	goto :ValidCertName
 ) else (
 	call :parsenames "!FNames!" 1
