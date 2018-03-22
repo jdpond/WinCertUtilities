@@ -11,14 +11,6 @@ Rem @param CertName - Name of the certificate corresponding to directory and cer
 
 call "etc/CertConfig.bat"
 
-if exist %OpenSSLExe% goto :PickCertName
-echo To use these utilities, you must have a running copy of OpenSSL running at the location specified in CertConfig.bat
-echo You can download this open source system from:  http://www.openssl.org/related/binaries.html
-echo If you loaded the system into a non-standard directory, you will have to modify CertConfig.bat to specify the proper location
-echo.
-pause
-exit
-
 :PickCertName
 if "%1" NEQ "" (
 	set CertName=%1
